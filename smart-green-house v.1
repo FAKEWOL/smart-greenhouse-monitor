@@ -1,0 +1,81 @@
+#include <LiquidCrystal.h>
+#include <DHT.h>
+
+#define DHTPIN A1      // DHT sensörünün bağlı olduğu analog pin
+#define DHTTYPE DHT11  // Kullanılan DHT sensörü tipi
+DHT dht(DHTPIN, DHTTYPE);
+
+// LCD bağlantıları
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);  // RS, EN, D4, D5, D6, D7
+
+int waterSensorPin = A0;  // Su sensörünün bağlı olduğu analog pin
+int soilMoisturePin = A2;  // Toprak nem sensörünün bağlı olduğu dijital pin
+int buzzerPin = 8;        // Buzzer'ın bağlı olduğu pin
+
+void setup() {
+  Serial.begin(9600);
+  dht.begin();
+  lcd.begin(16, 2);
+  lcd.print("Sera Kontrol");
+  delay(2000);
+}
+
+void loop() {
+  float humidity = dht.readHumidity();
+  float temperature = dht.readTemperature();
+  int waterStatus = analogRead(waterSensorPin);  // Su sensöründen analog okuma
+  int soilMoisture = digitalRead(soilMoisturePin);  // Toprak nem sensöründen dijital okuma
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Sicaklik: ");
+  lcd.print(temperature);
+  lcd.print("C");
+  delay(4000);
+
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Nem: ");
+  lcd.print(humidity);
+  lcd.print("%");
+  delay(4000);
+  lcd.clear();
+
+  // Su seviyesi düşükse (500'ün altı)
+  if (waterStatus < 500) {  
+    lcd.setCursor(0, 0);
+    lcd.print("Su Az! ");
+    digitalWrite(buzzerPin, HIGH);  // Buzzer'ı çal
+  } else {
+    digitalWrite(buzzerPin, LOW);  // Buzzer'ı kapat
+  }
+  delay(4000);
+  lcd.clear();
+
+  // Toprak nemi kuruysa (HIGH sinyal)
+  if (soilMoisture == HIGH) {  
+    lcd.setCursor(0, 0);
+    lcd.print("Toprak Kuru! ");
+    digitalWrite(buzzerPin, HIGH);  // Buzzer'ı çal
+  } else {
+    digitalWrite(buzzerPin, LOW);  // Buzzer'ı kapat
+  }
+  delay(4000);
+  lcd.clear();
+
+  // Sıcaklık kontrolü - Çok sıcak veya çok soğuksa
+  if (temperature < 15) {  // Soğuk (15°C'nin altı)
+    lcd.setCursor(0, 0);
+    lcd.print("Cok soguk! ");
+    digitalWrite(buzzerPin, HIGH);  // Buzzer'ı çal
+  } else if (temperature > 30) {  // Sıcak (30°C'nin üstü)
+    lcd.setCursor(0, 0);
+    lcd.print("Cok sicak! ");
+    digitalWrite(buzzerPin, HIGH);  // Buzzer'ı çal
+  } else {
+    digitalWrite(buzzerPin, LOW);  // Buzzer'ı kapat
+  }
+
+  delay(4000);  // 2 saniye bekle
+}
